@@ -3,14 +3,15 @@ from flask import Flask
 import paho.mqtt.publish as publish
 import serial
 import json
-import time as t
+import time
 import plotly.graph_objs as go
 import boto3
+import threading
 
 app = Flask(__name__)
 
 #Setup Serial Communication with Device
-DEVICE = '/dev/tty.usbmodem212401'
+DEVICE = '/dev/tty.usbmodem12401'
 serial = serial.Serial(DEVICE, 9600, timeout=1)
 
 #MQTT
@@ -24,28 +25,30 @@ table = dynamodb.Table(table_name)
 
 @app.route('/')
 def index():
-    co2_date_times = ["2/3/2023", "3/3/2023", "4/3/2023"]
-    co2_values = [500, 400, 700]
-    tvoc_date_times = ["2/3/2023", "3/3/2023", "4/3/2023"]
-    tvoc_values = [500, 400, 700]
+    #Setup arrays for the graphs
+    temp_date_times = ["2/3/2023", "3/3/2023", "4/3/2023"]
+    temp_values = [500, 400, 700]
+    humid_date_times = ["2/3/2023", "3/3/2023", "4/3/2023"]
+    humid_values = [500, 400, 700]
+    light_date_times = ["2/3/2023", "3/3/2023", "4/3/2023"]
     light_values = [700, 400, 600]
-        # Create a Plotly line chart of the co2 data
-    co2_chart = go.Figure()
-    co2_chart.add_trace(go.Scatter(x=co2_date_times, y=co2_values, mode='lines'))
-    co2_chart.update_layout(title='CO2 Values over Time', xaxis_title='Date/Time', yaxis_title='CO2 Value (ppm)')
-    co2_chart.write_html('static/co2_chart.html')
 
-    # Create a Plotly line chart of the tvoc data
-    tvoc_chart = go.Figure()
-    tvoc_chart.add_trace(go.Scatter(x=tvoc_date_times, y=tvoc_values, mode='lines'))
-    tvoc_chart.update_layout(title='TVOC Values over Time', xaxis_title='Date/Time', yaxis_title='TVOC Value (ppb)')
-    tvoc_chart.write_html('static/tvoc_chart.html')
+    # Create a Plotly line chart of the temperature data
+    temp_chart = go.Figure()
+    temp_chart.add_trace(go.Scatter(x=temp_date_times, y=temp_values, mode='lines'))
+    temp_chart.update_layout(title='Temperature over Time', xaxis_title='Date/Time', yaxis_title='Temperature (°C)')
+    temp_chart.write_html('static/charts/temperature_chart.html')
     
+    # Create a Plotly line chart of the humidity data
+    humid_chart = go.Figure()
+    humid_chart.add_trace(go.Scatter(x=humid_date_times, y=humid_values, mode='lines'))
+    humid_chart.update_layout(title='Humidity over Time', xaxis_title='Date/Time', yaxis_title='Humidity %')
+    humid_chart.write_html('static/charts/humidity_chart.html')
     # Create a Plotly line chart of the light data
-    tvoc_chart = go.Figure()
-    tvoc_chart.add_trace(go.Scatter(x=tvoc_date_times, y=light_values, mode='lines'))
-    tvoc_chart.update_layout(title='Light Values over Time', xaxis_title='Date/Time', yaxis_title='Light Value')
-    tvoc_chart.write_html('static/light_chart.html')
+    light_chart = go.Figure()
+    light_chart.add_trace(go.Scatter(x=light_date_times, y=light_values, mode='lines'))
+    light_chart.update_layout(title='Light Values over Time', xaxis_title='Date/Time', yaxis_title='Light Value')
+    light_chart.write_html('static/charts/light_chart.html')
     
     return render_template('index.html')
 
@@ -53,34 +56,34 @@ def index():
 def aqSensor():
     serial.close()
     serial.open()
-    serial.write(b"buzzerDetails")
-    t.sleep(1)
+    serial.write(b"fanDetails")
+    time.sleep(1)
     data = serial.readline().decode('utf-8')
     j = json.loads(data)
 
-    buzzerStatus = j["buzzerEnabled"]
-    if buzzerStatus == False:
-        currentBuzzerStatus = "Disabled"
+    fanStatus = j["fanOn"]
+    if fanStatus == False:
+        currentFanStatus = "Disabled"
     else:
-        currentBuzzerStatus = "Enabled"
-    return render_template('aqSensor.html', currentBuzzerTrigger = j["buzzerTriggerValue"], currentBuzzerStatus = currentBuzzerStatus)
+        currentFanStatus = "Enabled"
+    return render_template('aqSensor.html', currentFanTrigger = j["fanTriggerValue"], currentFanStatus = currentFanStatus)
 
-@app.route('/success', methods = ["GET", "POST"])
-def success():
+@app.route('/aqSuccess', methods = ["GET", "POST"])
+def aqSuccess():
     if request.method == "POST":
-        buzzerStatus = request.form.get("buzzer")
-        buzzerTriggerValue = request.form.get("triggerValue")
-        serial.write(b"changeBuzzer")
-        t.sleep(2)
-        serial.write(str(buzzerTriggerValue).encode('ascii'))
-        t.sleep(2)
+        fanStatus = request.form.get("fan")
+        fanTriggerValue = request.form.get("triggerValue")
+        serial.write(b"changeFan")
+        time.sleep(2)
+        serial.write(str(fanTriggerValue).encode('ascii'))
+        time.sleep(2)
         serial.close()
         serial.open()
-        if(buzzerStatus == "True"):
-            serial.write(b"enableBuzzer")
+        if(fanStatus == "True"):
+            serial.write(b"enableFan")
         else:
-            serial.write(b"disableBuzzer")
-    return render_template('success.html')
+            serial.write(b"disableFan")
+    return render_template('aqSuccess.html')
 
 @app.route('/light')
 def light():
@@ -117,5 +120,21 @@ def data():
    except Exception as e:
         return f"Error occurred: {str(e)}"
 
+
+def aqSendData_thread():
+    while True:
+        serial.write(b"getData")
+        time.sleep(1)
+        data = serial.readline().decode('utf-8')
+        #Use Python's JSON library to read the JSON data
+        j = json.loads(data)
+        data = {"temperature" : j["temp"], "humidity" : j["humid"]}
+        publish.single("/air/data", payload=json.dumps(data), hostname=HOST)
+        time.sleep(5)
+
 if __name__ == '__main__':
+    #Send Data using a Thread
+    t = threading.Thread(target=aqSendData_thread)
+    t.start()
+    #Start Flask Server
     app.run(debug=True)

@@ -36,8 +36,8 @@
       <h1>Welcome to the Arduino Home Assistant Dashboard</h1>
       <p>You can control and look at historic sensor data using the above navbar. Each sensor has their own unique page.</p>
     </div>
-    <iframe src="{{ url_for('static', filename='co2_chart.html') }}" width="800" height="600"></iframe>
-    <iframe src="{{ url_for('static', filename='tvoc_chart.html') }}" width="800" height="600"></iframe>
-    <iframe src="{{ url_for('static', filename='light_chart.html') }}" width="800" height="600"></iframe>
+    <iframe src="{{ url_for('static', filename='charts/temperature_chart.html') }}" width="800" height="600"></iframe>
+    <iframe src="{{ url_for('static', filename='charts/humidity_chart.html') }}" width="800" height="600"></iframe>
+    <iframe src="{{ url_for('static', filename='charts/light_chart.html') }}" width="800" height="600"></iframe>
   </body>
 </html>

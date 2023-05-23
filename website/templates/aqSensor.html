@@ -34,20 +34,20 @@
   <body>
     <br>
     <h2>Air Quality Sensor Settings</h2>
-    <p>The current trigger is <strong>{{currentBuzzerTrigger}} ppm</strong> for the buzzer</p>
-    <p>The buzzer is currently: <strong>{{currentBuzzerStatus}}</strong></p>
+    <p>The current trigger is <strong>{{currentFanTrigger}}°C</strong> for the buzzer</p>
+    <p>The buzzer is currently: <strong>{{currentFanStatus}}</strong></p>
     <br>
-    <form action="{{ url_for("success")}} " method="post">
+    <form action="{{ url_for("aqSuccess")}} " method="post">
       <div class="mb-3">
         <label for="triggerValue" class="form-label">Update Trigger Value</label>
         <input type="text" class="form-control" id="triggerValue" name="triggerValue">
       </div>
-      <label for="btn-group" class="form-label">Do you want the buzzer?</label>
+      <label for="btn-group" class="form-label">Do you want the fan?</label>
       <div class="btn-group" role="group" aria-label="Basic radio toggle button group">
-        <input type="radio" class="btn-check" name="buzzer" id="True" value="True" autocomplete="off" checked>
+        <input type="radio" class="btn-check" name="fan" id="True" value="True" autocomplete="off" checked>
         <label class="btn btn-outline-primary" for="True">Yes</label>
       
-        <input type="radio" class="btn-check" name="buzzer" id="False" value="False" autocomplete="off">
+        <input type="radio" class="btn-check" name="fan" id="False" value="False" autocomplete="off">
         <label class="btn btn-outline-primary" for="False">No</label>
       </div>
       <button type="submit" class="btn btn-primary">Submit</button>
