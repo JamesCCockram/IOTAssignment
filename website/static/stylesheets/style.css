@@ -1,0 +1,15 @@
+h2, p, form
+{
+    padding-left: 2%;
+}
+
+form
+{
+    padding-right: 80%;
+}
+
+#index h1, #index p
+{
+    padding-top: 2%;
+    text-align: center;
+}
