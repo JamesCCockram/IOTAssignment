@@ -25,23 +25,46 @@ table = dynamodb.Table(table_name)
 
 @app.route('/')
 def index():
+    table = dynamodb.Table('air_table')
+    response = table.scan()
+    items = response['Items']
     #Setup arrays for the graphs
-    temp_date_times = ["2/3/2023", "3/3/2023", "4/3/2023"]
-    temp_values = [500, 400, 700]
-    humid_date_times = ["2/3/2023", "3/3/2023", "4/3/2023"]
-    humid_values = [500, 400, 700]
-    light_date_times = ["2/3/2023", "3/3/2023", "4/3/2023"]
-    light_values = [700, 400, 600]
+    aq_date_times = []
+    temp_values = []
+    humid_values = []
+    for item in items:
+        aq_date_times.append(item['timeStamp'])
+        temp_values.append(item['co2'])
+        humid_values.append(item['tvoc'])
+
+    table = dynamodb.Table('light_table')
+    response = table.scan()
+    items = response['Items']
+    light_date_times = []
+    light_values = []
+    for item in items:
+        light_date_times.append(item['timeStamp'])
+        light_values.append(item['light'])
+
+    table = dynamodb.Table('alarm_table')
+    response = table.scan()
+    items = response['Items']
+    motion_date_times = []
+    motion_values = []
+    for item in items:
+        light_date_times.append(item['timeStamp'])
+        light_values.append(item['Motion'])
+
 
     # Create a Plotly line chart of the temperature data
     temp_chart = go.Figure()
-    temp_chart.add_trace(go.Scatter(x=temp_date_times, y=temp_values, mode='lines'))
+    temp_chart.add_trace(go.Scatter(x=aq_date_times, y=temp_values, mode='lines'))
     temp_chart.update_layout(title='Temperature over Time', xaxis_title='Date/Time', yaxis_title='Temperature (°C)')
     temp_chart.write_html('static/charts/temperature_chart.html')
     
     # Create a Plotly line chart of the humidity data
     humid_chart = go.Figure()
-    humid_chart.add_trace(go.Scatter(x=humid_date_times, y=humid_values, mode='lines'))
+    humid_chart.add_trace(go.Scatter(x=aq_date_times, y=humid_values, mode='lines'))
     humid_chart.update_layout(title='Humidity over Time', xaxis_title='Date/Time', yaxis_title='Humidity %')
     humid_chart.write_html('static/charts/humidity_chart.html')
     # Create a Plotly line chart of the light data
@@ -58,15 +81,21 @@ def aqSensor():
     serial.open()
     serial.write(b"fanDetails")
     time.sleep(1)
-    data = serial.readline().decode('utf-8')
-    j = json.loads(data)
+    try:
+        data = serial.readline().decode('utf-8')
+        j = json.loads(data)
 
-    fanStatus = j["fanOn"]
-    if fanStatus == False:
-        currentFanStatus = "Disabled"
-    else:
-        currentFanStatus = "Enabled"
-    return render_template('aqSensor.html', currentFanTrigger = j["fanTriggerValue"], currentFanStatus = currentFanStatus)
+        fanTriggerValue = j["fanTriggerValue"]
+        fanStatus = j["fanOn"]
+        if fanStatus == False:
+            currentFanStatus = "Disabled"
+        else:
+            currentFanStatus = "Enabled"
+    except:
+        fanTriggerValue = "Error"
+        currentFanStatus = "Error"
+
+    return render_template('aqSensor.html', currentFanTrigger = fanTriggerValue, currentFanStatus = currentFanStatus)
 
 @app.route('/aqSuccess', methods = ["GET", "POST"])
 def aqSuccess():
@@ -116,25 +145,11 @@ def data():
    try:
         response = table.scan()
         items = response['Items']
+        print(items)
         return render_template('data.html', items = items)
    except Exception as e:
         return f"Error occurred: {str(e)}"
 
-
-def aqSendData_thread():
-    while True:
-        serial.write(b"getData")
-        time.sleep(1)
-        data = serial.readline().decode('utf-8')
-        #Use Python's JSON library to read the JSON data
-        j = json.loads(data)
-        data = {"temperature" : j["temp"], "humidity" : j["humid"]}
-        publish.single("/air/data", payload=json.dumps(data), hostname=HOST)
-        time.sleep(5)
-
 if __name__ == '__main__':
-    #Send Data using a Thread
-    t = threading.Thread(target=aqSendData_thread)
-    t.start()
     #Start Flask Server
     app.run(debug=True)

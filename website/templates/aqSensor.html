@@ -40,7 +40,7 @@
     <form action="{{ url_for("aqSuccess")}} " method="post">
       <div class="mb-3">
         <label for="triggerValue" class="form-label">Update Trigger Value</label>
-        <input type="text" class="form-control" id="triggerValue" name="triggerValue">
+        <input type="text" class="form-control" id="triggerValue" name="triggerValue" value="{{currentFanTrigger}}">
       </div>
       <label for="btn-group" class="form-label">Do you want the fan?</label>
       <div class="btn-group" role="group" aria-label="Basic radio toggle button group">

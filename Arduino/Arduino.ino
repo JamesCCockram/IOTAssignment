@@ -130,6 +130,11 @@ void loop() {
   {
       digitalWrite(fanPin, HIGH); 
   }
+
+  else
+  {
+      digitalWrite(fanPin, LOW); 
+  }
   
   //Update Screen
   draw_temp(temp, humid);
