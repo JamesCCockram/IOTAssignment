@@ -59,7 +59,6 @@ void draw_temp(float temp, int humid)
   {
     u8g.setFont(u8g_font_unifont);
     u8g.drawStr(0, 20, "Temp:");
-    //u8g.drawStr(50, 20, get_temp_c());
     u8g.setPrintPos(75, 20);
     u8g.print(temp);
     u8g.setPrintPos(115, 20);

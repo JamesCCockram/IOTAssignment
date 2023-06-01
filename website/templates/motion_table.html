@@ -1,0 +1,24 @@
+<!--
+  motion_table.html
+  GroupAssignment
+
+  Created by James Cockram on 5/24/23.
+
+-->
+
+<table class="table table-bordered">
+  <thead>
+    <tr class="table-dark">
+      <th>Date/Time</th>
+      <th>Motion</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for item in items %}
+      <tr>
+        <td>{{ item.timeStamp }}</td>
+        <td>{{ item.motion }}</td>
+      </tr>
+    {% endfor %}
+  </tbody>
+</table>

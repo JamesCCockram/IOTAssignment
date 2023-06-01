@@ -28,4 +28,4 @@ while True:
       print("Published: '" + json.dumps(data) + "' to the topic: " + TOPIC)
     except:
        print("Arduino Busy")
-    t.sleep(5)
+    t.sleep(30)
